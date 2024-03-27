@@ -1,0 +1,168 @@
+---
+title: "brms foxes"
+format: gfm
+---
+
+```{r}
+library(ggplot2)
+library(dplyr)
+library(brms)
+library(rethinking)
+
+theme_set(theme_bw())
+```
+
+
+```{r}
+
+data(foxes)
+
+foxes_standardized <- foxes |>
+  mutate(across(c(avgfood, weight, area, groupsize), scale))
+
+```
+
+# Examining pairwise relationships
+
+```{r}
+
+ggplot(foxes_standardized, aes(area, weight)) + geom_point()
+
+ggplot(foxes_standardized, aes(avgfood, weight, color = groupsize)) + 
+  geom_point() +
+  scale_color_viridis_c()
+
+ggplot(foxes_standardized, aes(groupsize, weight)) + geom_point()
+
+```
+
+# Total causal effect of area on weight
+
+## Model
+
+$W {\sim} N({\mu}, {\sigma})$
+
+$\{mu} {\sim} {\alpha} + {\beta}_A * A$
+
+${\alpha} {\sim} N(0, 0.2)$
+
+${\beta}_A {\sim} N(0, 0.5)$
+
+${\sigma} {\sim} {\exp}(1)$
+
+## Prior predictive sims
+
+```{r}
+n = 1000
+
+par_sims <- data.frame(
+  simindex = 1:n,
+  alpha_sims = rnorm(n, 0, 0.2),
+  betaA_sims = rnorm(n, 0, 0.5))
+
+areas <- seq(-2, 2, length.out = 100)
+
+pp_sims <- expand.grid(areas, 1:n) |>
+  rename(area = Var1,
+         simindex = Var2) |>
+  left_join(par_sims) |>
+  mutate(sim_mu = alpha_sims + betaA_sims * area)
+
+ggplot(pp_sims, aes(area, sim_mu, group = simindex)) +
+  geom_line(alpha = .1) +
+  geom_point(data = foxes_standardized, aes(area, weight), inherit.aes = F)
+
+```
+
+## Fitting the model
+
+```{r, output = F}
+
+a_w <- brm(weight ~ area, data = foxes_standardized,
+           prior = c(prior(normal(0, 0.5), class = b),
+                     prior(normal(0, 0.2), class = Intercept),
+                     prior(exponential(1), class = sigma)))
+
+```
+
+```{r}
+
+summary(a_w)
+
+plot(a_w)
+```
+
+
+# Effect of adding food
+
+```{r, output = F}
+
+f_w <- brm(weight ~ avgfood, data = foxes_standardized,
+           prior = c(prior(normal(0, 0.5), class = b),
+                     prior(normal(0, 0.2), class = Intercept),
+                     prior(exponential(1), class = sigma)))
+
+```
+
+
+```{r}
+
+summary(f_w)
+
+plot(f_w)
+```
+
+
+# Effect of groupsize
+
+```{r, output = F}
+
+f_g_w <- brm(weight ~ avgfood + groupsize, data = foxes_standardized,
+           prior = c(prior(normal(0, 0.5), class = b),
+                     prior(normal(0, 0.2), class = Intercept),
+                     prior(exponential(1), class = sigma)))
+
+```
+
+
+```{r}
+
+summary(f_g_w)
+
+plot(f_g_w)
+```
+
+## Predictions conditioned on avgfood, groupsize
+
+```{r}
+
+simfood <- seq(-2, 2, length.out = 50)
+simgroup <- seq(-2, 2, length.out = 50)
+
+simdat <- expand.grid(simfood, simgroup) |>
+  rename(avgfood = Var1,
+         groupsize = Var2)
+
+f_g_w_preds <- posterior_predict(f_g_w, newdata = simdat, ndraws = 100)
+
+f_g_w_tidy <- t(f_g_w_preds) |>
+  as.data.frame() |>
+  cbind(simdat) |>
+  tidyr::pivot_longer(-c(avgfood, groupsize), names_to = "simdraw", values_to = "pred_mu") |>
+  group_by(avgfood, groupsize) |>
+  summarize(avg_mu = mean(pred_mu),
+         upper_mu = quantile(pred_mu, probs = .975),
+         lower_mu = quantile(pred_mu, probs = .025))
+
+```
+
+```{r}
+ggplot(f_g_w_tidy, aes(groupsize, avg_mu, group = avgfood, color = avgfood)) +
+  geom_line()
+
+
+ggplot(f_g_w_tidy, aes(avgfood, avg_mu, group = groupsize, color = groupsize)) +
+  geom_line()
+
+
+```
