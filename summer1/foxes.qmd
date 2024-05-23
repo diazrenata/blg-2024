@@ -87,6 +87,8 @@ plot(m1)
 
 ```
 
+See [here](https://mc-stan.org/rstan/reference/Rhat.html)
+
 ```{r}
 
 tidybayes::summarise_draws(m1)

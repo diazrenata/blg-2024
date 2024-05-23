@@ -176,6 +176,8 @@ plot(m1)
 
 ![](foxes_files/figure-commonmark/unnamed-chunk-7-1.png)
 
+See [here](https://mc-stan.org/rstan/reference/Rhat.html)
+
 ``` r
 tidybayes::summarise_draws(m1)
 ```
