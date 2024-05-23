@@ -6,9 +6,10 @@ library(tidybayes)
 
 data(foxes)
 # Revisit the urban fox data, data(foxes), from the previous chapter’s practice problems. 
-# Use WAIC or PSIS based model comparison on five different models, each using weight as the outcome, and containing these sets of predictor variables:
+#' Use WAIC or PSIS based model comparison on five different models, 
+#' each using weight as the outcome, and containing these sets of predictor variables:
 #   
-#   (1)  avgfood + groupsize + area
+# (1)  avgfood + groupsize + area
 # 
 # (2)  avgfood + groupsize
 # 
@@ -24,44 +25,46 @@ data(foxes)
 foxes_standardized <- foxes |>
   select(-group) |>
   mutate(across(everything(), scale))
+# 
+# m1 <- brm(weight ~ avgfood + groupsize + area,
+#           data = foxes_standardized,
+#           family = gaussian(),
+#           prior = c(prior(normal(0, 0.5), class = b),
+#                             prior(normal(0, 0.2), class = Intercept),
+#                             prior(exponential(1), class = sigma)))
+# 
+# m2 <- brm(weight ~ avgfood + groupsize,
+#           data = foxes_standardized,
+#           family = gaussian(),
+#           prior = c(prior(normal(0, 0.5), class = b),
+#                     prior(normal(0, 0.2), class = Intercept),
+#                     prior(exponential(1), class = sigma)))
+# 
+# m3 <- brm(weight ~ groupsize + area,
+#           data = foxes_standardized,
+#           family = gaussian(),
+#           prior = c(prior(normal(0, 0.5), class = b),
+#                     prior(normal(0, 0.2), class = Intercept),
+#                     prior(exponential(1), class = sigma)))
+# 
+# m4 <- brm(weight ~ avgfood,
+#           data = foxes_standardized,
+#           family = gaussian(),
+#           prior = c(prior(normal(0, 0.5), class = b),
+#                     prior(normal(0, 0.2), class = Intercept),
+#                     prior(exponential(1), class = sigma)))
+# 
+# 
+# m5 <- brm(weight ~ area,
+#           data = foxes_standardized,
+#           family = gaussian(),
+#           prior = c(prior(normal(0, 0.5), class = b),
+#                     prior(normal(0, 0.2), class = Intercept),
+#                     prior(exponential(1), class = sigma)))
+# 
+# save(m1, m2, m3, m4, m5, file = "week7-april12/fox_models.RData")
 
-m1 <- brm(weight ~ avgfood + groupsize + area,
-          data = foxes_standardized,
-          family = gaussian(),
-          prior = c(prior(normal(0, 0.5), class = b),
-                            prior(normal(0, 0.2), class = Intercept),
-                            prior(exponential(1), class = sigma)))
-
-m2 <- brm(weight ~ avgfood + groupsize,
-          data = foxes_standardized,
-          family = gaussian(),
-          prior = c(prior(normal(0, 0.5), class = b),
-                    prior(normal(0, 0.2), class = Intercept),
-                    prior(exponential(1), class = sigma)))
-
-m3 <- brm(weight ~ groupsize + area,
-          data = foxes_standardized,
-          family = gaussian(),
-          prior = c(prior(normal(0, 0.5), class = b),
-                    prior(normal(0, 0.2), class = Intercept),
-                    prior(exponential(1), class = sigma)))
-
-m4 <- brm(weight ~ avgfood,
-          data = foxes_standardized,
-          family = gaussian(),
-          prior = c(prior(normal(0, 0.5), class = b),
-                    prior(normal(0, 0.2), class = Intercept),
-                    prior(exponential(1), class = sigma)))
-
-
-m5 <- brm(weight ~ area,
-          data = foxes_standardized,
-          family = gaussian(),
-          prior = c(prior(normal(0, 0.5), class = b),
-                    prior(normal(0, 0.2), class = Intercept),
-                    prior(exponential(1), class = sigma)))
-
-save(m1, m2, m3, m4, m5, file = "week7-april12/fox_models.RData")
+load("week7-april12/fox_models.RData")
 
 fox_waic <- waic(m1, m2, m3, m4, m5, compare = T)
 
@@ -85,12 +88,13 @@ fox_waics <- fox_waics |>
                            "avgfood",
                            "area"))
   ) |>
-  left_join(mutate(as.data.frame(fox_waic$diffs), model = row.names(fox_waic$diffs)))
+  left_join(mutate(as.data.frame(fox_waic$diffs), model = row.names(fox_waic$diffs))) |>
+  filter(var == "waic")
 
-ggplot(filter(fox_waics, var == "waic"), aes(Estimate, model)) +
+ggplot(filter(fox_waics, var == "waic"), aes(elpd_diff, model)) +
   geom_point() +
-  geom_errorbarh(aes(xmin = Estimate - SE, xmax = Estimate + SE)) +
-  geom_errorbarh(aes(xmin = Estimate - se_diff, xmax = Estimate + se_diff), color = "red") +
+#  geom_errorbarh(aes(xmin = elpd_waic - se_elpd_waic, xmax = elpd_waic + se_elpd_waic)) +
+  geom_errorbarh(aes(xmin = elpd_diff - se_diff, xmax = elpd_diff + se_diff), color = "red") +
   geom_label(aes(label = formula), nudge_y = .25)
 
 fox_psis <- loo(m1, m2, m3, m4, m5, compare = T)
@@ -122,3 +126,5 @@ ggplot(filter(fox_psises, var == "looic"), aes(Estimate, model)) +
   geom_errorbarh(aes(xmin = Estimate - SE, xmax = Estimate + SE)) +
   geom_label(aes(label = formula), nudge_y = .25)
 
+
+plot(foxes$area, foxes$avgfood)

@@ -1,0 +1,116 @@
+---
+title: "Foxes"
+format: gfm
+editor: source
+---
+
+```{r}
+
+library(rethinking)
+library(brms)
+library(dplyr)
+library(tidyr)
+library(stringr)
+library(ggplot2)
+
+```
+
+```{r}
+data(foxes)
+head(foxes)
+```
+
+```{r}
+
+
+foxes_standardized <- foxes |>
+  select(-group) |>
+  mutate(across(everything(), scale))
+
+```
+
+```{r, eval = FALSE}
+
+m1 <- brm(weight ~ avgfood + groupsize + area,
+          data = foxes_standardized,
+          family = gaussian(),
+          prior = c(prior(normal(0, 0.5), class = b),
+                            prior(normal(0, 0.2), class = Intercept),
+                            prior(exponential(1), class = sigma)))
+
+m2 <- brm(weight ~ avgfood + groupsize,
+          data = foxes_standardized,
+          family = gaussian(),
+          prior = c(prior(normal(0, 0.5), class = b),
+                    prior(normal(0, 0.2), class = Intercept),
+                    prior(exponential(1), class = sigma)))
+
+m3 <- brm(weight ~ groupsize + area,
+          data = foxes_standardized,
+          family = gaussian(),
+          prior = c(prior(normal(0, 0.5), class = b),
+                    prior(normal(0, 0.2), class = Intercept),
+                    prior(exponential(1), class = sigma)))
+
+m4 <- brm(weight ~ avgfood,
+          data = foxes_standardized,
+          family = gaussian(),
+          prior = c(prior(normal(0, 0.5), class = b),
+                    prior(normal(0, 0.2), class = Intercept),
+                    prior(exponential(1), class = sigma)))
+
+
+m5 <- brm(weight ~ area,
+          data = foxes_standardized,
+          family = gaussian(),
+          prior = c(prior(normal(0, 0.5), class = b),
+                    prior(normal(0, 0.2), class = Intercept),
+                    prior(exponential(1), class = sigma)))
+
+```
+
+```{r}
+
+load(here::here("week7-april12", "fox_models.RData"))
+
+```
+
+```{r}
+
+summary(m1)
+
+```
+
+```{r, fig.dim = c(8,8)}
+
+plot(m1)
+
+```
+
+```{r}
+
+tidybayes::summarise_draws(m1)
+
+```
+
+
+```{r}
+
+brms::fixef(m1)
+
+```
+
+
+See [here](https://michael-franke.github.io/Bayesian-Regression/practice-sheets/11a-cheat-sheet.html#explore-via-shinystan).
+
+```{r, fig.dim=c(4,6)}
+
+as_draws_df(m1, variable = "^b_", regex = TRUE) |> 
+  as_tibble() |>
+  pivot_longer(starts_with("b_"), names_to = "param") |>
+  mutate(param = str_replace_all(param, "b_([ab])_Intercept", "\\1")) |>
+  ggplot(aes(x = .iteration, y = value)) +
+  facet_grid(rows = vars(param), cols = vars(.chain), scales = "free_y") +
+  geom_line(color = "#009FB7")
+
+```

@@ -4,7 +4,12 @@ library(dplyr)
 library(ggplot2)
 library(tidybayes)
 
-# 8H1.  Return to the data(tulips) example in the chapter. Now include the bed variable as a predictor in the interaction model. Don’t interact bed with the other predictors; just include it as a main effect. Note that bed is categorical. So to use it properly, you will need to either construct dummy variables or rather an index variable, as explained in Chapter 5.
+#' 8H1.  Return to the data(tulips) example in the chapter. 
+#' Now include the bed variable as a predictor in the interaction model. 
+#' Don’t interact bed with the other predictors; 
+#' just include it as a main effect. Note that bed is categorical. 
+#' So to use it properly, you will need to either construct dummy variables 
+#' or rather an index variable, as explained in Chapter 5.
 
 data(tulips)
 

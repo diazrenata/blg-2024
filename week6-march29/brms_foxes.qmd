@@ -32,7 +32,12 @@ ggplot(foxes_standardized, aes(avgfood, weight, color = groupsize)) +
   geom_point() +
   scale_color_viridis_c()
 
-ggplot(foxes_standardized, aes(groupsize, weight)) + geom_point()
+ggplot(foxes_standardized, aes(avgfood, groupsize)) + geom_point()
+
+foxes <- foxes |>
+  mutate(actual_food = avgfood * groupsize)
+
+ggplot(foxes, aes(actual_food, groupsize)) + geom_point()
 
 ```
 
@@ -68,9 +73,11 @@ pp_sims <- expand.grid(areas, 1:n) |>
   left_join(par_sims) |>
   mutate(sim_mu = alpha_sims + betaA_sims * area)
 
-ggplot(pp_sims, aes(area, sim_mu, group = simindex)) +
+ggplot(pp_sims, aes(area, sim_mu, group = simindex, color = as.factor(simindex))) +
   geom_line(alpha = .1) +
-  geom_point(data = foxes_standardized, aes(area, weight), inherit.aes = F)
+  geom_point(data = foxes_standardized, aes(area, weight), inherit.aes = F) + theme(legend.position = "none")
+
+hist(pp_sims$betaA_sims)
 
 ```
 

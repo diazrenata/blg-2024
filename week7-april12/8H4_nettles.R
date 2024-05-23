@@ -20,7 +20,7 @@ nettle <- nettle |>
 # Consider log(area) in your regression(s) as a covariate (not an interaction). 
 # Interpret your results. 
 
-ggplot(nettle, aes(mean.growing.season, log_lang_per_cap, color = log_area)) +
+ggplot(nettle, aes(log_area, log_lang_per_cap)) +
   geom_point() +
   scale_color_viridis_c()
 
@@ -136,7 +136,9 @@ ggplot(
     group = sd.growing.season
   )
 ) +
-  geom_line()
+  geom_line() +
+  scale_color_viridis_c() +
+  geom_point(data = nettle, inherit.aes = F, aes(mean.growing.season, log_lang_per_cap, color = sd.growing.season))
 
 ggplot(nettlec_tidy, aes(log_area, pred_mu, color = sd.growing.season)) +
   geom_point() 
